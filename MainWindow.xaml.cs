@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Windows;
 
@@ -18,9 +17,9 @@ namespace NewParser
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            string path = @"Ингредиенты1.csv";
+            string path = @"Пользователи.csv"; // путь для источника данных
 
-            List<string> priceList = new List<string>();
+            List<string> currentList = new List<string>();
             List<string> totalList = new List<string>();
 
             using (StreamReader streamReader = new StreamReader(path, Encoding.Default))
@@ -28,12 +27,14 @@ namespace NewParser
                 string s = streamReader.ReadLine();
                 System.Windows.MessageBox.Show(s);
 
-                string[] spl = s.Split(';');
-                string str = "Price";
-                priceList.Add("Цена"); //добавление первого элемента, чтобы не смещалось вверх при заполнении
+                string[] spl = s.Split(';'); // разделяем строку на под строки для парса нужного столбца, 
+                                             // если нужно парсить всю строку, заменяем разделитель на что нибудь другое
+
+                string str = "Имя"; // заголовок столбца, данные которого нужно парсить
+                currentList.Add("Имя"); // добавление первого элемента, чтобы не смещалось вверх при заполнении
 
                 int i = -1;
-                foreach (var item in spl)
+                foreach (var item in spl) // выбор нужного столбца 
                 {
                     i++;
 
@@ -46,35 +47,47 @@ namespace NewParser
                 for (int k = 0; k < spl.Length; k++)
                 {
                     totalList.Add(spl[k]);
-                }
+                } 
 
                 while (true)
                 {
                     try
                     {
-                        var line = streamReader.ReadLine();
-                        var values = line.Split(';');
-                        priceList.Add(values[i]);
+                        var line = streamReader.ReadLine(); // считываем линию
+                        var values = line.Split(';'); // разделяем её разделителем - запятой, точка с запятой и т.п.
+                        currentList.Add(values[i]);  // записываем столбец в лист, где i - нужный нам столбец
                     }
                     catch
                     {
-                        streamReader.BaseStream.Position = 0;
+                        streamReader.BaseStream.Position = 0; // возврат считывания в начало
                         break;
                     }
                 }
 
                 try
                 {
-                    for (int l = 0; i < priceList.Count; l++)
+                    for (int l = 0; l < currentList.Count; l++)
                     {
                         bool firstPoint = false;
-                        for (int j = 0; j < priceList[l].Length; j++)
+                        for (int j = 0; j < currentList[l].Length; j++)
                         {
-                            if (priceList[l][j] == ',' || priceList[l][j] == '.')
+                            if (currentList[l][j] == ' ')
+                            {
+                                if (firstPoint == true)
+                                {
+                                    currentList[l] = currentList[l].Remove(j, 1);
+                                    currentList[l] = currentList[l].Insert(j, ",");
+                                    break;
+                                }
+
+                                firstPoint = true;
+                                
+                            }
+                            /*if (priceList[l][j] == ',' || priceList[l][j] == '.')
                             {
                                 if (firstPoint == true) priceList[l] = priceList[l].Remove(j, 1);
 
-                                firstPoint = true;
+                                firstPoint = true;          
                                 priceList[l] = priceList[l].Replace('.', ','); //замена точек на запятые потому что SQL так сказал
                                 continue;
                             }
@@ -87,7 +100,7 @@ namespace NewParser
                             if (!char.IsDigit(priceList[l][j])) //если проверенный символ не является числом, то удаляются все символы до конца строки 
                             {
                                 priceList[l] = priceList[l].Remove(j, priceList[l].Length - j);
-                            }
+                            }*/
                         }
                     }
                 }
@@ -96,26 +109,26 @@ namespace NewParser
 
                 }
 
-                for(int p = 0; p < totalList.Count - 1; p++)
+                for (int p = 0; p < totalList.Count - 1; p++)
                 {
                     var line = totalList[p];
-                    if (line == s) continue; //пропуск головной строки
+                    if (line == s) continue; // пропуск головной строки
 
-                    var value = line.Split(';'); //разделение строки на столбцы
-                    value[i] = priceList[p]; //присваиваем нужному столбцу отпарсерное значение
+                    var value = line.Split(';'); // разделение строки на столбцы
+                    value[i] = currentList[p]; // присваиваем нужному столбцу отпарсерное значение
 
-                    for (int h = 0; h < value.Length; h++) //добавляем к каждой записи столбца ';', потому что при разделениис строки они слетают
-                    {
-                        value[h] += ';';
-                    }
+                    //for (int h = 0; h < value.Length; h++) // (опционально) добавляем к каждой записи столбца ';', потому что при разделениис строки они слетают
+                    //{
+                    //    value[h] += ';';
+                    //}
 
-                    totalList[p] = string.Concat<string>(value); //соединяем все столбцы в один и присваиваем в лист
+                    totalList[p] = string.Concat<string>(value); // соединяем все столбцы в один и присваиваем в лист
                 }
             }
 
             string secondPath = @"C:\Users\Keima\Desktop\ParsedData.csv";
 
-            File.WriteAllLines(secondPath, totalList, Encoding.Default);
+            File.WriteAllLines(secondPath, totalList, Encoding.UTF8);
         }
     }
 }
